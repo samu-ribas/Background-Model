@@ -9,6 +9,7 @@
 	sucesso: .asciiz "ok id:"
 	erro: .asciiz "erro ao abrir arquivo"
 	dados_lidos: .asciiz "\nDadis lidos do cabeçlho: "
+	msg_largura: .asciiz "\nLargura extraida:"
 	
 	# .space N é uma diretiva do montador (assembler)
 	buffer_leitura: .space 21 		# reserva um espaço de leitura na memória
@@ -62,8 +63,51 @@ main:
 	la $a0, buffer_leitura
 	syscall
 	
-	j fim_programa		 # Continua para o final do programa
+	la $t0, buffer_leitura
 	
+	# 3 - fazer o emparelhamento do cabeçalho para obter a largura
+	
+	la $t0, buffer_leitura		#$t0 é o ponteiro. Aponta para o caractere atual que estamos lendo
+	li $s1, 0			# $s1 vai acumular nosso número( a largura)
+	
+
+	# primeiro pular tudo que nao for digitos
+pular_nao_digitos
+	lb $t1, 0($t0)			# carrega um byte ( caractere apontado por $t0)
+	blt $t1, '0', proximo_char	
+	bgt $t1, '9', proximo_char
+	j loop_leitura_numero
+	
+	
+proximo_char:
+	addi $t0, $t0, 1
+	j pular_nao_digitos
+	
+loop_leitura_numero:
+	lb $t1, 0($t0)
+	
+	blt $t1, '0', fim_numero
+	bgl $t1, '9', fim_numero
+
+	addi $t1, $t1, -'0'
+	li $t2, 10
+	mult $s1, $t2
+	mflo $s1
+	add $s1, $s1, $t1
+	
+	addi $t0, $t0, 1
+	
+	j loop_leitura_numero
+	
+fim_numero:
+	li $v0, 1
+	la $a0, msg_largura
+	syscall
+	
+	li $v0, 1
+	move $a0, $s1
+	syscall
+			
 erro_de_abertura:
 	li $v0, 4
 	la $a0, erro
